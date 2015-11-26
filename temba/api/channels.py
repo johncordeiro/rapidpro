@@ -21,13 +21,13 @@ from temba.orgs.models import get_stripe_credentials, NEXMO_UUID
 from temba.msgs.models import Msg, HANDLE_EVENT_TASK, HANDLER_QUEUE, MSG_EVENT
 from temba.triggers.models import Trigger
 from temba.utils import analytics, JsonResponse, json_date_to_datetime
+from temba.utils.ascii import to_ascii
 from temba.utils.middleware import disable_middleware
 from temba.utils.queues import push_task
 from twilio import twiml
 
 
 class TwilioHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(TwilioHandler, self).dispatch(*args, **kwargs)
@@ -57,7 +57,8 @@ class TwilioHandler(View):
         if to_number and call_sid and direction == 'inbound' and status == 'ringing':
 
             # find a channel that knows how to answer twilio calls
-            channel = Channel.objects.filter(address=to_number, channel_type='T', role__contains='A', is_active=True).exclude(org=None).first()
+            channel = Channel.objects.filter(address=to_number, channel_type='T', role__contains='A',
+                                             is_active=True).exclude(org=None).first()
             if not channel:
                 raise Exception("No active answering channel found for number: %s" % to_number)
 
@@ -153,11 +154,13 @@ class TwilioHandler(View):
 
         return HttpResponse("Not Handled, unknown action", status=400)
 
-class StripeHandler(View): # pragma: no cover
+
+class StripeHandler(View):  # pragma: no cover
     """
     Handles WebHook events from Stripe.  We are interested as to when invoices are
     charged by Stripe so we can send the user an invoice email.
     """
+
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(StripeHandler, self).dispatch(*args, **kwargs)
@@ -229,7 +232,6 @@ class StripeHandler(View): # pragma: no cover
 
 
 class AfricasTalkingHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(AfricasTalkingHandler, self).dispatch(*args, **kwargs)
@@ -244,7 +246,8 @@ class AfricasTalkingHandler(View):
         action = kwargs['action']
         channel_uuid = kwargs['uuid']
 
-        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=AFRICAS_TALKING).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=AFRICAS_TALKING).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel with uuid: %s not found." % channel_uuid, status=404)
 
@@ -286,7 +289,6 @@ class AfricasTalkingHandler(View):
 
 
 class ZenviaHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(ZenviaHandler, self).dispatch(*args, **kwargs)
@@ -303,7 +305,8 @@ class ZenviaHandler(View):
         action = kwargs['action']
         channel_uuid = kwargs['uuid']
 
-        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=ZENVIA).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=ZENVIA).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel with uuid: %s not found." % channel_uuid, status=404)
 
@@ -346,7 +349,7 @@ class ZenviaHandler(View):
 
             sms = Msg.create_incoming(channel,
                                       (TEL_SCHEME, request.REQUEST['from']),
-                                      request.REQUEST['msg'],
+                                      to_ascii(request.REQUEST['msg']),
                                       date=brazil_date)
 
             return HttpResponse("SMS Accepted: %d" % sms.id)
@@ -356,7 +359,6 @@ class ZenviaHandler(View):
 
 
 class ExternalHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(ExternalHandler, self).dispatch(*args, **kwargs)
@@ -429,6 +431,7 @@ class ShaqodoonHandler(ExternalHandler):
     """
     Overloaded external channel for accepting Shaqodoon messages
     """
+
     def get_channel_type(self):
         return SHAQODOON
 
@@ -437,11 +440,12 @@ class YoHandler(ExternalHandler):
     """
     Overloaded external channel for accepting Yo! Messages.
     """
+
     def get_channel_type(self):
         return YO
 
-class InfobipHandler(View):
 
+class InfobipHandler(View):
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(InfobipHandler, self).dispatch(*args, **kwargs)
@@ -453,7 +457,8 @@ class InfobipHandler(View):
         action = kwargs['action'].lower()
         channel_uuid = kwargs['uuid']
 
-        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=INFOBIP).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=INFOBIP).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel with uuid: %s not found." % channel_uuid, status=404)
 
@@ -502,7 +507,8 @@ class InfobipHandler(View):
         if 'sender' not in request.REQUEST or 'text' not in request.REQUEST or 'receiver' not in request.REQUEST:
             return HttpResponse("Missing parameters, must have 'sender', 'text' and 'receiver'", status=400)
 
-        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=INFOBIP).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=INFOBIP).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel with uuid: %s not found." % channel_uuid, status=404)
 
@@ -520,7 +526,6 @@ class InfobipHandler(View):
 
 
 class Hub9Handler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(Hub9Handler, self).dispatch(*args, **kwargs)
@@ -576,7 +581,6 @@ class Hub9Handler(View):
 
 
 class HighConnectionHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(HighConnectionHandler, self).dispatch(*args, **kwargs)
@@ -589,7 +593,8 @@ class HighConnectionHandler(View):
         from temba.channels.models import HIGH_CONNECTION
 
         channel_uuid = kwargs['uuid']
-        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=HIGH_CONNECTION).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=HIGH_CONNECTION).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel with uuid: %s not found." % channel_uuid, status=400)
 
@@ -639,7 +644,6 @@ class HighConnectionHandler(View):
 
 
 class BlackmynaHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(BlackmynaHandler, self).dispatch(*args, **kwargs)
@@ -652,7 +656,8 @@ class BlackmynaHandler(View):
         from temba.channels.models import BLACKMYNA
 
         channel_uuid = kwargs['uuid']
-        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=BLACKMYNA).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=BLACKMYNA).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel with uuid: %s not found." % channel_uuid, status=400)
 
@@ -698,7 +703,6 @@ class BlackmynaHandler(View):
 
 
 class SMSCentralHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(SMSCentralHandler, self).dispatch(*args, **kwargs)
@@ -711,7 +715,8 @@ class SMSCentralHandler(View):
         from temba.channels.models import SMSCENTRAL
 
         channel_uuid = kwargs['uuid']
-        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=SMSCENTRAL).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_uuid, is_active=True, channel_type=SMSCENTRAL).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel with uuid: %s not found." % channel_uuid, status=400)
 
@@ -735,13 +740,13 @@ class M3TechHandler(ExternalHandler):
     """
     Exposes our API for handling and receiving messages, same as external handlers.
     """
+
     def get_channel_type(self):
         from temba.channels.models import M3TECH
         return M3TECH
 
 
 class NexmoHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(NexmoHandler, self).dispatch(*args, **kwargs)
@@ -756,7 +761,8 @@ class NexmoHandler(View):
         action = kwargs['action'].lower()
 
         # nexmo fires a test request at our URL with no arguments, return 200 so they take our URL as valid
-        if (action == 'receive' and not request.REQUEST.get('to', None)) or (action == 'status' and not request.REQUEST.get('messageId', None)):
+        if (action == 'receive' and not request.REQUEST.get('to', None)) or (
+                        action == 'status' and not request.REQUEST.get('messageId', None)):
             return HttpResponse("No to parameter, ignoring")
 
         request_uuid = kwargs['uuid']
@@ -765,7 +771,8 @@ class NexmoHandler(View):
         channel_number = request.REQUEST['to']
 
         # look up the channel
-        channel = Channel.objects.filter(uuid=channel_number, is_active=True, channel_type=NEXMO).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=channel_number, is_active=True, channel_type=NEXMO).exclude(
+            org=None).first()
 
         # make sure we got one, and that it matches the key for our org
         org_uuid = None
@@ -808,8 +815,8 @@ class NexmoHandler(View):
         else:
             return HttpResponse("Not handled", status=400)
 
-class VerboiceHandler(View):
 
+class VerboiceHandler(View):
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(VerboiceHandler, self).dispatch(*args, **kwargs)
@@ -823,7 +830,8 @@ class VerboiceHandler(View):
         request_uuid = kwargs['uuid']
 
         from temba.channels.models import VERBOICE
-        channel = Channel.objects.filter(uuid__iexact=request_uuid, is_active=True, channel_type=VERBOICE).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid__iexact=request_uuid, is_active=True, channel_type=VERBOICE).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel not found for id: %s" % request_uuid, status=404)
 
@@ -845,8 +853,8 @@ class VerboiceHandler(View):
 
         return HttpResponse("Not handled", status=400)
 
-class VumiHandler(View):
 
+class VumiHandler(View):
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(VumiHandler, self).dispatch(*args, **kwargs)
@@ -917,7 +925,8 @@ class VumiHandler(View):
         # this is a new incoming message
         elif action == 'receive':
             if not 'timestamp' in body or not 'from_addr' in body or not 'content' in body or not 'message_id' in body:
-                return HttpResponse("Missing one of timestamp, from_addr, content or message_id, ignoring message", status=400)
+                return HttpResponse("Missing one of timestamp, from_addr, content or message_id, ignoring message",
+                                    status=400)
 
             # dates come in the format "2014-04-18 03:54:20.570618" GMT
             sms_date = datetime.strptime(body['timestamp'], "%Y-%m-%d %H:%M:%S.%f")
@@ -935,8 +944,8 @@ class VumiHandler(View):
         else:
             return HttpResponse("Not handled", status=400)
 
-class KannelHandler(View):
 
+class KannelHandler(View):
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(KannelHandler, self).dispatch(*args, **kwargs)
@@ -952,7 +961,8 @@ class KannelHandler(View):
         request_uuid = kwargs['uuid']
 
         # look up the channel
-        channel = Channel.objects.filter(uuid=request_uuid, is_active=True, channel_type=KANNEL).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=request_uuid, is_active=True, channel_type=KANNEL).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel not found for id: %s" % request_uuid, status=400)
 
@@ -1002,7 +1012,8 @@ class KannelHandler(View):
         # this is a new incoming message
         elif action == 'receive':
             if not all(k in request.REQUEST for k in ['message', 'sender', 'ts', 'id']):
-                return HttpResponse("Missing one of 'message', 'sender', 'id' or 'ts' in request parameters.", status=400)
+                return HttpResponse("Missing one of 'message', 'sender', 'id' or 'ts' in request parameters.",
+                                    status=400)
 
             # dates come in the format "2014-04-18 03:54:20.570618" GMT
             sms_date = datetime.utcfromtimestamp(int(request.REQUEST['ts']))
@@ -1021,7 +1032,6 @@ class KannelHandler(View):
 
 
 class ClickatellHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(ClickatellHandler, self).dispatch(*args, **kwargs)
@@ -1037,7 +1047,8 @@ class ClickatellHandler(View):
         request_uuid = kwargs['uuid']
 
         # look up the channel
-        channel = Channel.objects.filter(uuid=request_uuid, is_active=True, channel_type=CLICKATELL).exclude(org=None).first()
+        channel = Channel.objects.filter(uuid=request_uuid, is_active=True, channel_type=CLICKATELL).exclude(
+            org=None).first()
         if not channel:
             return HttpResponse("Channel not found for id: %s" % request_uuid, status=400)
 
@@ -1059,19 +1070,19 @@ class ClickatellHandler(View):
                 return HttpResponse("Message with external id of '%s' not found" % sms_id, status=400)
 
             # possible status codes Clickatell will send us
-            STATUS_CHOICES = {'001': FAILED,      # incorrect msg id
-                              '002': WIRED,       # queued
-                              '003': SENT,        # delivered to upstream gateway
-                              '004': DELIVERED,   # received by handset
-                              '005': FAILED,      # error in message
-                              '006': FAILED,      # terminated by user
-                              '007': FAILED,      # error delivering
-                              '008': WIRED,       # msg received
-                              '009': FAILED,      # error routing
-                              '010': FAILED,      # expired
-                              '011': WIRED,       # delayed but queued
-                              '012': FAILED,      # out of credit
-                              '014': FAILED}      # too long
+            STATUS_CHOICES = {'001': FAILED,  # incorrect msg id
+                              '002': WIRED,  # queued
+                              '003': SENT,  # delivered to upstream gateway
+                              '004': DELIVERED,  # received by handset
+                              '005': FAILED,  # error in message
+                              '006': FAILED,  # terminated by user
+                              '007': FAILED,  # error delivering
+                              '008': WIRED,  # msg received
+                              '009': FAILED,  # error routing
+                              '010': FAILED,  # expired
+                              '011': WIRED,  # delayed but queued
+                              '012': FAILED,  # out of credit
+                              '014': FAILED}  # too long
 
             # check our status
             status_code = self.request.REQUEST['status']
@@ -1107,7 +1118,8 @@ class ClickatellHandler(View):
         elif action == 'receive':
             if not all(k in request.REQUEST for k in ['from', 'text', 'moMsgId', 'timestamp']):
                 # return 200 as clickatell pings our endpoint during configuration
-                return HttpResponse("Missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.", status=200)
+                return HttpResponse("Missing one of 'from', 'text', 'moMsgId' or 'timestamp' in request parameters.",
+                                    status=200)
 
             # dates come in the format "2014-04-18 03:54:20" GMT+2
             sms_date = parse_datetime(request.REQUEST['timestamp'])
@@ -1140,7 +1152,6 @@ class ClickatellHandler(View):
 
 
 class PlivoHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(PlivoHandler, self).dispatch(*args, **kwargs)
@@ -1155,8 +1166,8 @@ class PlivoHandler(View):
         request_uuid = kwargs['uuid']
 
         if not all(k in request.REQUEST for k in ['From', 'To', 'MessageUUID']):
-                return HttpResponse("Missing one of 'From', 'To', or 'MessageUUID' in request parameters.",
-                                    status=400)
+            return HttpResponse("Missing one of 'From', 'To', or 'MessageUUID' in request parameters.",
+                                status=400)
 
         channel = Channel.objects.filter(is_active=True, uuid=request_uuid, channel_type=PLIVO).first()
 
@@ -1248,7 +1259,6 @@ class PlivoHandler(View):
 
 
 class MageHandler(View):
-
     @disable_middleware
     def dispatch(self, *args, **kwargs):
         return super(MageHandler, self).dispatch(*args, **kwargs)

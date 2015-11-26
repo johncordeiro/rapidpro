@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 from django.conf import settings
 
 
@@ -26,12 +26,11 @@ class Migration(migrations.Migration):
                 ('repeat_days', models.IntegerField(default=0, help_text='bit mask of days of the week', null=True, blank=True)),
                 ('last_fire', models.DateTimeField(default=None, help_text='When this schedule last fired', null=True, blank=True)),
                 ('next_fire', models.DateTimeField(default=None, help_text='When this schedule fires next', null=True, blank=True)),
-                ('created_by', models.ForeignKey(related_name=b'schedules_schedule_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
-                ('modified_by', models.ForeignKey(related_name=b'schedules_schedule_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('created_by', models.ForeignKey(related_name='schedules_schedule_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('modified_by', models.ForeignKey(related_name='schedules_schedule_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
     ]

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 from django.conf import settings
 
 
@@ -31,16 +31,15 @@ class Migration(migrations.Migration):
                 ('trigger_type', models.CharField(default='K', help_text='The type of this trigger', max_length=1, verbose_name='Trigger Type', choices=[('K', 'Keyword Trigger'), ('S', 'Schedule Trigger'), ('V', 'Inbound Call Trigger'), ('M', 'Missed Call Trigger'), ('C', 'Catch All Trigger'), ('F', 'Follow Account Trigger')])),
                 ('channel', models.OneToOneField(null=True, to='channels.Channel', help_text='The associated channel', verbose_name='Channel')),
                 ('contacts', models.ManyToManyField(help_text='Individual contacts to broadcast the flow to', to='contacts.Contact', verbose_name='Contacts')),
-                ('created_by', models.ForeignKey(related_name=b'triggers_trigger_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('created_by', models.ForeignKey(related_name='triggers_trigger_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
                 ('flow', models.ForeignKey(related_name='triggers', blank=True, to='flows.Flow', help_text='Which flow will be started', null=True, verbose_name='Flow')),
                 ('groups', models.ManyToManyField(help_text='The groups to broadcast the flow to', to='contacts.ContactGroup', verbose_name='Groups')),
-                ('modified_by', models.ForeignKey(related_name=b'triggers_trigger_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('modified_by', models.ForeignKey(related_name='triggers_trigger_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
                 ('org', models.ForeignKey(verbose_name='Org', to='orgs.Org', help_text='The organization this trigger belongs to')),
                 ('schedule', models.OneToOneField(related_name='trigger', null=True, to='schedules.Schedule', blank=True, help_text='Our recurring schedule', verbose_name='Schedule')),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
     ]

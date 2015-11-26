@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 from django.conf import settings
 
 
@@ -18,9 +18,6 @@ class Migration(migrations.Migration):
                 ('key', models.CharField(max_length=40, serialize=False, primary_key=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
             ],
-            options={
-            },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='WebHookEvent',
@@ -39,7 +36,6 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='WebHookResult',
@@ -50,16 +46,16 @@ class Migration(migrations.Migration):
                 ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
                 ('url', models.TextField(help_text='The URL the event was delivered to', null=True, blank=True)),
                 ('data', models.TextField(help_text='The data that was posted to the webhook', null=True, blank=True)),
+                ('request', models.TextField(help_text='The request that was posted to the webhook', null=True, blank=True)),
                 ('status_code', models.IntegerField(help_text='The HTTP status as returned by the web hook')),
                 ('message', models.CharField(help_text='A message describing the result, error messages go here', max_length=255)),
                 ('body', models.TextField(help_text='The body of the HTTP response as returned by the web hook', null=True, blank=True)),
-                ('created_by', models.ForeignKey(related_name=b'api_webhookresult_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('created_by', models.ForeignKey(related_name='api_webhookresult_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
                 ('event', models.ForeignKey(help_text='The event that this result is tied to', to='api.WebHookEvent')),
-                ('modified_by', models.ForeignKey(related_name=b'api_webhookresult_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('modified_by', models.ForeignKey(related_name='api_webhookresult_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
     ]

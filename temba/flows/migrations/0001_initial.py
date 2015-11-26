@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 import django.utils.timezone
-from django.conf import settings
+import temba.utils.models
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('contacts', '0001_initial'),
     ]
 
@@ -18,27 +17,24 @@ class Migration(migrations.Migration):
             name='ActionLog',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('text', models.TextField(help_text='The log text')),
-                ('created_on', models.DateTimeField(help_text='When this action log was created', auto_now_add=True)),
+                ('text', models.TextField(help_text='Log event text')),
+                ('level', models.CharField(default='I', help_text='Log event level', max_length=1, choices=[('I', 'Info'), ('W', 'Warning'), ('E', 'Error')])),
+                ('created_on', models.DateTimeField(help_text='When this log event occurred', auto_now_add=True)),
             ],
-            options={
-            },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='ActionSet',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('uuid', models.CharField(unique=True, max_length=36)),
+                ('destination', models.CharField(max_length=36, null=True)),
+                ('destination_type', models.CharField(max_length=1, null=True, choices=[('R', 'RuleSet'), ('A', 'ActionSet')])),
                 ('actions', models.TextField(help_text='The JSON encoded actions for this action set')),
                 ('x', models.IntegerField()),
                 ('y', models.IntegerField()),
                 ('created_on', models.DateTimeField(help_text='When this action was originally created', auto_now_add=True)),
                 ('modified_on', models.DateTimeField(help_text='When this action was last modified', auto_now=True)),
             ],
-            options={
-            },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='ExportFlowResultsTask',
@@ -48,13 +44,13 @@ class Migration(migrations.Migration):
                 ('created_on', models.DateTimeField(help_text=b'When this item was originally created', auto_now_add=True)),
                 ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
                 ('host', models.CharField(help_text='The host this export task was created on', max_length=32)),
-                ('filename', models.CharField(help_text='The file name for our export', max_length=64, null=True)),
                 ('task_id', models.CharField(max_length=64, null=True)),
+                ('is_finished', models.BooleanField(default=False, help_text='Whether this export is complete')),
+                ('uuid', models.CharField(help_text='The uuid used to name the resulting export file', max_length=36, null=True)),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='Flow',
@@ -63,21 +59,22 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True, help_text=b'Whether this item is active, use this instead of deleting')),
                 ('created_on', models.DateTimeField(help_text=b'When this item was originally created', auto_now_add=True)),
                 ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
+                ('uuid', models.CharField(default=temba.utils.models.generate_uuid, max_length=36, help_text='The unique identifier for this object', unique=True, verbose_name='Unique Identifier', db_index=True)),
                 ('name', models.CharField(help_text='The name for this flow', max_length=64)),
                 ('entry_uuid', models.CharField(max_length=36, unique=True, null=True)),
                 ('entry_type', models.CharField(help_text='The type of node this flow starts with', max_length=1, null=True, choices=[('R', 'Rules'), ('A', 'Actions')])),
                 ('is_archived', models.BooleanField(default=False, help_text='Whether this flow is archived')),
-                ('flow_type', models.CharField(default='F', help_text='The type of this flow', max_length=1, choices=[('F', 'Message flow'), ('M', 'Single Message Flow'), ('V', 'Phone call flow')])),
+                ('flow_type', models.CharField(default='F', help_text='The type of this flow', max_length=1, choices=[('F', 'Message flow'), ('M', 'Single Message Flow'), ('V', 'Phone call flow'), ('S', 'Android Survey')])),
                 ('metadata', models.TextField(help_text='Any extra metadata attached to this flow, strictly used by the user interface.', null=True, blank=True)),
                 ('expires_after_minutes', models.IntegerField(default=720, help_text='Minutes of inactivity that will cause expiration from flow')),
                 ('ignore_triggers', models.BooleanField(default=False, help_text='Ignore keyword triggers while in this flow')),
                 ('saved_on', models.DateTimeField(help_text='When this item was saved', auto_now_add=True)),
-                ('base_language', models.CharField(help_text='The primary language for editing this flow', max_length=3, null=True, blank=True)),
+                ('base_language', models.CharField(default='base', max_length=4, null=True, help_text='The primary language for editing this flow', blank=True)),
+                ('version_number', models.IntegerField(default=8, help_text='The flow version this definition is in')),
             ],
             options={
                 'ordering': ('-modified_on',),
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='FlowLabel',
@@ -85,9 +82,21 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('name', models.CharField(help_text='The name of this flow label', max_length=64, verbose_name='Name')),
             ],
+        ),
+        migrations.CreateModel(
+            name='FlowRevision',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('is_active', models.BooleanField(default=True, help_text=b'Whether this item is active, use this instead of deleting')),
+                ('created_on', models.DateTimeField(help_text=b'When this item was originally created', auto_now_add=True)),
+                ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
+                ('definition', models.TextField(help_text='The JSON flow definition')),
+                ('spec_version', models.IntegerField(default=8, help_text='The flow version this definition is in')),
+                ('revision', models.IntegerField(help_text='Revision number for this definition', null=True)),
+            ],
             options={
+                'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='FlowRun',
@@ -96,12 +105,10 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True, help_text='Whether this flow run is currently active')),
                 ('fields', models.TextField(help_text='A JSON representation of any custom flow values the user has saved away', null=True, blank=True)),
                 ('created_on', models.DateTimeField(default=django.utils.timezone.now, help_text='When this flow run was created')),
-                ('expires_on', models.DateTimeField(help_text='When this flow run will expire', null=True, blank=True)),
-                ('expired_on', models.DateTimeField(help_text='When this flow run expired', null=True, blank=True)),
+                ('expires_on', models.DateTimeField(help_text='When this flow run will expire', null=True)),
+                ('expired_on', models.DateTimeField(help_text='When this flow run expired', null=True)),
+                ('modified_on', models.DateTimeField(help_text='When this flow run was last updated', auto_now=True)),
             ],
-            options={
-            },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='FlowStart',
@@ -117,7 +124,6 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='FlowStep',
@@ -130,30 +136,10 @@ class Migration(migrations.Migration):
                 ('rule_value', models.CharField(help_text='The value that was matched in our category for this ruleset, null on ActionSets', max_length=640, null=True)),
                 ('rule_decimal_value', models.DecimalField(help_text='The decimal value that was matched in our category for this ruleset, null on ActionSets or if a non numeric rule was matched', null=True, max_digits=36, decimal_places=8)),
                 ('next_uuid', models.CharField(help_text='The uuid of the next step type we took', max_length=36, null=True)),
-                ('arrived_on', models.DateTimeField(help_text='When the user arrived at this step in the flow', auto_now_add=True)),
+                ('arrived_on', models.DateTimeField(help_text='When the user arrived at this step in the flow')),
                 ('left_on', models.DateTimeField(help_text='When the user left this step in the flow', null=True, db_index=True)),
                 ('contact', models.ForeignKey(related_name='flow_steps', to='contacts.Contact')),
             ],
-            options={
-            },
-            bases=(models.Model,),
-        ),
-        migrations.CreateModel(
-            name='FlowVersion',
-            fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('is_active', models.BooleanField(default=True, help_text=b'Whether this item is active, use this instead of deleting')),
-                ('created_on', models.DateTimeField(help_text=b'When this item was originally created', auto_now_add=True)),
-                ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
-                ('definition', models.TextField(help_text='The JSON flow definition')),
-                ('created_by', models.ForeignKey(related_name=b'flows_flowversion_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
-                ('flow', models.ForeignKey(related_name='versions', to='flows.Flow')),
-                ('modified_by', models.ForeignKey(related_name=b'flows_flowversion_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
-            ],
-            options={
-                'abstract': False,
-            },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='RuleSet',
@@ -166,16 +152,15 @@ class Migration(migrations.Migration):
                 ('webhook_action', models.CharField(default='POST', max_length=8, null=True, help_text='How the webhook should be executed', blank=True)),
                 ('rules', models.TextField(help_text='The JSON encoded actions for this action set')),
                 ('finished_key', models.CharField(help_text='During IVR, this is the key to indicate we are done waiting', max_length=1, null=True, blank=True)),
-                ('value_type', models.CharField(default=b'T', help_text='The type of value this ruleset saves', max_length=1, choices=[(b'T', b'Text'), (b'N', b'Numeric'), (b'D', b'Date & Time'), (b'S', b'State'), (b'I', b'District')])),
-                ('response_type', models.CharField(default='O', help_text='The type of response that is being saved', max_length=1, choices=[('O', 'Open Ended'), ('C', 'Multiple Choice'), ('N', 'Numeric'), ('M', 'Menu'), ('K', 'Keypad'), ('R', 'Recording')])),
+                ('value_type', models.CharField(default='T', help_text='The type of value this ruleset saves', max_length=1, choices=[('T', 'Text'), ('N', 'Numeric'), ('D', 'Date & Time'), ('S', 'State'), ('I', 'District')])),
+                ('ruleset_type', models.CharField(help_text='The type of ruleset', max_length=16, null=True, choices=[('wait_message', 'Wait for message'), ('wait_recording', 'Wait for recording'), ('wait_digit', 'Wait for digit'), ('wait_digits', 'Wait for digits'), ('webhook', 'Webhook'), ('flow_field', 'Split on flow field'), ('contact_field', 'Split on contact field'), ('expression', 'Split by expression')])),
+                ('response_type', models.CharField(help_text='The type of response that is being saved', max_length=1)),
+                ('config', models.TextField(help_text='RuleSet type specific configuration', null=True, verbose_name='Ruleset Configuration')),
                 ('x', models.IntegerField()),
                 ('y', models.IntegerField()),
                 ('created_on', models.DateTimeField(help_text='When this ruleset was originally created', auto_now_add=True)),
                 ('modified_on', models.DateTimeField(help_text='When this ruleset was last modified', auto_now=True)),
                 ('flow', models.ForeignKey(related_name='rule_sets', to='flows.Flow')),
             ],
-            options={
-            },
-            bases=(models.Model,),
         ),
     ]

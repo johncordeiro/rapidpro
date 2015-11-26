@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 import django.db.models.deletion
 from django.conf import settings
 
@@ -14,7 +14,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL('CREATE EXTENSION IF NOT EXISTS hstore'),
         migrations.CreateModel(
             name='CreditAlert',
             fields=[
@@ -23,13 +22,12 @@ class Migration(migrations.Migration):
                 ('created_on', models.DateTimeField(help_text=b'When this item was originally created', auto_now_add=True)),
                 ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
                 ('threshold', models.IntegerField(help_text='The threshold this alert was sent for')),
-                ('created_by', models.ForeignKey(related_name=b'orgs_creditalert_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
-                ('modified_by', models.ForeignKey(related_name=b'orgs_creditalert_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('created_by', models.ForeignKey(related_name='orgs_creditalert_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('modified_by', models.ForeignKey(related_name='orgs_creditalert_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='Invitation',
@@ -38,17 +36,16 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True, help_text=b'Whether this item is active, use this instead of deleting')),
                 ('created_on', models.DateTimeField(help_text=b'When this item was originally created', auto_now_add=True)),
                 ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
-                ('email', models.EmailField(help_text='The email to which we send the invitation of the viewer', max_length=75, verbose_name='Email')),
+                ('email', models.EmailField(help_text='The email to which we send the invitation of the viewer', max_length=254, verbose_name='Email')),
                 ('secret', models.CharField(help_text='a unique code associated with this invitation', unique=True, max_length=64, verbose_name='Secret')),
                 ('host', models.CharField(help_text='The host this invitation was created on', max_length=32)),
-                ('user_group', models.CharField(default='V', max_length=1, verbose_name='User Role', choices=[('A', 'Administrator'), ('E', 'Editor'), ('V', 'Viewer')])),
-                ('created_by', models.ForeignKey(related_name=b'orgs_invitation_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
-                ('modified_by', models.ForeignKey(related_name=b'orgs_invitation_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('user_group', models.CharField(default='V', max_length=1, verbose_name='User Role', choices=[('A', 'Administrator'), ('E', 'Editor'), ('V', 'Viewer'), ('S', 'Surveyor')])),
+                ('created_by', models.ForeignKey(related_name='orgs_invitation_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('modified_by', models.ForeignKey(related_name='orgs_invitation_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='Language',
@@ -59,13 +56,12 @@ class Migration(migrations.Migration):
                 ('modified_on', models.DateTimeField(help_text=b'When this item was last modified', auto_now=True)),
                 ('name', models.CharField(max_length=128)),
                 ('iso_code', models.CharField(max_length=4)),
-                ('created_by', models.ForeignKey(related_name=b'orgs_language_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
-                ('modified_by', models.ForeignKey(related_name=b'orgs_language_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('created_by', models.ForeignKey(related_name='orgs_language_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('modified_by', models.ForeignKey(related_name='orgs_language_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='Org',
@@ -81,7 +77,7 @@ class Migration(migrations.Migration):
                 ('language', models.CharField(choices=[(b'en-us', b'English'), (b'pt-br', b'Portuguese'), (b'fr', b'French'), (b'es', b'Spanish')], max_length=64, blank=True, help_text='The main language used by this organization', null=True, verbose_name='Language')),
                 ('timezone', models.CharField(max_length=64, verbose_name='Timezone')),
                 ('date_format', models.CharField(default='D', help_text='Whether day comes first or month comes first in dates', max_length=1, verbose_name='Date Format', choices=[('D', 'DD-MM-YYYY'), ('M', 'MM-DD-YYYY')])),
-                ('webhook', models.CharField(max_length=255, null=True, verbose_name='Webhook', blank=True)),
+                ('webhook', models.TextField(help_text='Webhook endpoint and configuration', null=True, verbose_name='Webhook')),
                 ('webhook_events', models.IntegerField(default=0, help_text='Which type of actions will trigger webhook events.', verbose_name='Webhook Events')),
                 ('msg_last_viewed', models.DateTimeField(auto_now_add=True, verbose_name='Message Last Viewed')),
                 ('flows_last_viewed', models.DateTimeField(auto_now_add=True, verbose_name='Flows Last Viewed')),
@@ -90,16 +86,16 @@ class Migration(migrations.Migration):
                 ('is_anon', models.BooleanField(default=False, help_text='Whether this organization anonymizes the phone numbers of contacts within it')),
                 ('administrators', models.ManyToManyField(help_text='The administrators in your organization', related_name='org_admins', verbose_name='Administrators', to=settings.AUTH_USER_MODEL)),
                 ('country', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, blank=True, to='locations.AdminBoundary', help_text='The country this organization should map results for.', null=True)),
-                ('created_by', models.ForeignKey(related_name=b'orgs_org_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('created_by', models.ForeignKey(related_name='orgs_org_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
                 ('editors', models.ManyToManyField(help_text='The editors in your organization', related_name='org_editors', verbose_name='Editors', to=settings.AUTH_USER_MODEL)),
-                ('modified_by', models.ForeignKey(related_name=b'orgs_org_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('modified_by', models.ForeignKey(related_name='orgs_org_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
                 ('primary_language', models.ForeignKey(related_name='orgs', on_delete=django.db.models.deletion.SET_NULL, blank=True, to='orgs.Language', help_text='The primary language will be used for contacts with no language preference.', null=True)),
+                ('surveyors', models.ManyToManyField(help_text='The users can login via Android for your organization', related_name='org_surveyors', verbose_name='Surveyors', to=settings.AUTH_USER_MODEL)),
                 ('viewers', models.ManyToManyField(help_text='The viewers in your organization', related_name='org_viewers', verbose_name='Viewers', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
         ),
         migrations.CreateModel(
             name='TopUp',
@@ -113,14 +109,21 @@ class Migration(migrations.Migration):
                 ('expires_on', models.DateTimeField(help_text='The date that this top up will expire', verbose_name='Expiration Date')),
                 ('stripe_charge', models.CharField(help_text='The Stripe charge id for this charge', max_length=32, null=True, verbose_name='Stripe Charge Id', blank=True)),
                 ('comment', models.CharField(help_text='Any comment associated with this topup, used when we credit accounts', max_length=255, null=True, blank=True)),
-                ('created_by', models.ForeignKey(related_name=b'orgs_topup_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
-                ('modified_by', models.ForeignKey(related_name=b'orgs_topup_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
+                ('created_by', models.ForeignKey(related_name='orgs_topup_creations', to=settings.AUTH_USER_MODEL, help_text=b'The user which originally created this item')),
+                ('modified_by', models.ForeignKey(related_name='orgs_topup_modifications', to=settings.AUTH_USER_MODEL, help_text=b'The user which last modified this item')),
                 ('org', models.ForeignKey(related_name='topups', to='orgs.Org', help_text='The organization that was toppped up')),
             ],
             options={
                 'abstract': False,
             },
-            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='TopUpCredits',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('used', models.IntegerField(help_text='How many credits were used, can be negative')),
+                ('topup', models.ForeignKey(help_text='The topup these credits are being used against', to='orgs.TopUp')),
+            ],
         ),
         migrations.CreateModel(
             name='UserSettings',
@@ -130,26 +133,20 @@ class Migration(migrations.Migration):
                 ('tel', models.CharField(help_text='Phone number for testing and recording voice flows', max_length=16, null=True, verbose_name='Phone Number', blank=True)),
                 ('user', models.ForeignKey(related_name='settings', to=settings.AUTH_USER_MODEL)),
             ],
-            options={
-            },
-            bases=(models.Model,),
         ),
         migrations.AddField(
             model_name='language',
             name='org',
             field=models.ForeignKey(related_name='languages', verbose_name='Org', to='orgs.Org'),
-            preserve_default=True,
         ),
         migrations.AddField(
             model_name='invitation',
             name='org',
             field=models.ForeignKey(related_name='invitations', verbose_name='Org', to='orgs.Org', help_text='The organization to which the account is invited to view'),
-            preserve_default=True,
         ),
         migrations.AddField(
             model_name='creditalert',
             name='org',
             field=models.ForeignKey(help_text='The organization this alert was triggered for', to='orgs.Org'),
-            preserve_default=True,
         ),
     ]
